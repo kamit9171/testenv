@@ -1,0 +1,35 @@
+public DomainObjCollector getUserViews(ContextContainer cc) throws CbeException {
+    QueryApi queryApi = getQueryApi();
+    
+    String userId = cc.getUserId();
+    String sparqlQuery = String.format(
+        "PREFIX icd: <http://xml.web.boeing.com/icd#> " +
+        "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+        "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+        "SELECT ?columnId ?columnType ?columnAttribute ?viewOwnerType ?viewOwnerName ?viewName ?viewOwnerId " +
+        "WHERE { " +
+        "  VALUES ?user { icd:%s } " +
+        "  ?columnId rdf:type icd:ViewColumn. " +
+        "  ?columnId icd:Owner ?viewId. " +
+        "  ?columnId icd:column_type ?columnType. " +
+        "  ?columnId icd:column_attribute ?columnAttribute. " +
+        "  ?viewId rdf:type ?viewOwnerType. " +
+        "  ?viewId rdfs:label ?viewOwnerName. " +
+        "  ?viewId rdfs:label ?viewName. " +
+        "  ?viewId icd:Owner ?viewOwnerId. " +
+        "  BIND(@viewOwnerId = ?user AS ?isUserView) " +
+        "  BIND(EXISTS { ?viewOwnerId icd:Member+ ?user } AS ?isGroupView) " +
+        "  BIND(EXISTS { ?viewOwnerId icd:AssignedTo ?user } AS ?isRoleView) " +
+        "  BIND(EXISTS { ?viewId ^icd:DefaultView ?user } AS ?isUserDefault) " +
+        "  BIND(EXISTS { ?viewId ^icd:DefaultView/rdf:type icd:Project } AS ?isProjectDefault) " +
+        "  FILTER(?isGroupView || ?isRoleView || ?isUserView || ?isUserDefault || ?isProjectDefault) " +
+        "}", userId);
+
+    try {
+        // Use selectFrom method with the constructed SPARQL query
+        var results = queryApi.selectFrom(sparqlQuery);
+        return new DomainObjCollector(results);
+    } catch (Exception e) {
+        throw new CbeException(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage(), e);
+    }
+}
