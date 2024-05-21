@@ -1,6 +1,6 @@
 public DomainObjCollector getUserViews(ContextContainer cc) throws CbeException {
     QueryApi queryApi = getQueryApi();
-    
+
     String userId = cc.getUserId();
     String sparqlQuery = String.format(
         "PREFIX icd: <http://xml.web.boeing.com/icd#> " +
@@ -26,8 +26,8 @@ public DomainObjCollector getUserViews(ContextContainer cc) throws CbeException 
         "}", userId);
 
     try {
-        // Use selectFrom method with the constructed SPARQL query
-        var results = queryApi.selectFrom(sparqlQuery);
+        // Assuming executeSparqlQuery method exists and returns the results in a suitable format
+        List<ResultType> results = queryApi.executeSparqlQuery(sparqlQuery);
         return new DomainObjCollector(results);
     } catch (Exception e) {
         throw new CbeException(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage(), e);
