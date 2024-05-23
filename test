@@ -1,28 +1,32 @@
-PREFIX icd: <http://xml.web.boeing.com/icd#>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+public DomainObjCollector getUserViews(ContextContainer cc) throws CbeException {
+    QueryApi queryApi = getQueryApi();
 
-SELECT *
-WHERE {
-  VALUES ?user (icd:BEMS1618860)
+    try {
+        // Optimized query construction
+        var qb = queryApi.queryFrom(List.of(cc.getUserId()))
+                         .fork()
+                         .followBack(ElementConstants.OWNER)
+                         .filterOfType(ElementConstants.CUSTOMVIEW)
+                         .optional()
+                         .end()
+                         .or()
+                         .fork()
+                         .followBack(ElementConstants.MEMBER)
+                         .followBack(ElementConstants.OWNER)
+                         .filterOfType(ElementConstants.CUSTOMVIEW)
+                         .optional()
+                         .end()
+                         .or()
+                         .fork()
+                         .followBack(ElementConstants.ASSIGNEDTO)
+                         .followBack(ElementConstants.OWNER)
+                         .filterOfType(ElementConstants.CUSTOMVIEW)
+                         .optional()
+                         .end();
 
-  ?columnld rdf:type icd:ViewColumn.
-  ?columnld icd:Owner ?viewld.
-
-  # Column attributes go here
-  ?columnld icd:column_type ?column_type.
-  ?columnld icd:column_attribute ?column_attribute.
-
-  ?viewld rdf:type ?viewOwnerType.
-  ?viewld rdfs:label ?viewOwnerName.
-  ?viewld rdfs:label ?viewName.
-  ?viewld icd:Owner ?viewOwnerld.
-
-  BIND(?viewOwnerld = ?user AS ?isUserView)
-  BIND(EXISTS { ?viewOwnerld icd:Member+ ?user } AS ?isGroupView)
-  BIND(EXISTS { ?viewOwnerld icd:AssignedTo ?user } AS ?isRoleView)
-  BIND(EXISTS { ?viewld ^icd:DefaultView ?user } AS ?isUserDefault)
-  BIND(EXISTS { ?viewld ^icd:DefaultView/rdf:type icd:Project } AS ?isProjectDefault)
-
-  FILTER(?isGroupView || ?isRoleView || ?isUserView || ?isUserDefault || ?isProjectDefault)
+        var results = qb.query();
+        return new DomainObjCollector(results);
+    } catch (Exception e) {
+        throw new CbeException(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage(), e);
+    }
 }
