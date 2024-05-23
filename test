@@ -2,28 +2,32 @@ public DomainObjCollector getUserViews(ContextContainer cc) throws CbeException 
     QueryApi queryApi = getQueryApi();
 
     try {
-        // Optimized query construction
-        var qb = queryApi.queryFrom(List.of(cc.getUserId()))
-                         .fork()
-                         .followBack(ElementConstants.OWNER)
-                         .filterOfType(ElementConstants.CUSTOMVIEW)
-                         .optional()
-                         .end()
-                         .or()
-                         .fork()
-                         .followBack(ElementConstants.MEMBER)
-                         .followBack(ElementConstants.OWNER)
-                         .filterOfType(ElementConstants.CUSTOMVIEW)
-                         .optional()
-                         .end()
-                         .or()
-                         .fork()
-                         .followBack(ElementConstants.ASSIGNEDTO)
-                         .followBack(ElementConstants.OWNER)
-                         .filterOfType(ElementConstants.CUSTOMVIEW)
-                         .optional()
-                         .end();
+        var qb = queryApi.queryFrom(List.of(cc.getUserId()));
 
+        // Fork and follow the OWNER relationship
+        qb.fork()
+          .followBack(ElementConstants.OWNER)
+          .filterOfType(ElementConstants.CUSTOMVIEW)
+          .optional()
+          .end();
+
+        // Fork and follow the MEMBER relationship, then the OWNER relationship
+        qb.fork()
+          .followBack(ElementConstants.MEMBER)
+          .followBack(ElementConstants.OWNER)
+          .filterOfType(ElementConstants.CUSTOMVIEW)
+          .optional()
+          .end();
+
+        // Fork and follow the ASSIGNEDTO relationship, then the OWNER relationship
+        qb.fork()
+          .followBack(ElementConstants.ASSIGNEDTO)
+          .followBack(ElementConstants.OWNER)
+          .filterOfType(ElementConstants.CUSTOMVIEW)
+          .optional()
+          .end();
+
+        // Execute the query and collect the results
         var results = qb.query();
         return new DomainObjCollector(results);
     } catch (Exception e) {
