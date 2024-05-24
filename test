@@ -1,36 +1,35 @@
-public DomainObjCollector getUserViews(ContextContainer cc) throws CbeException {
-    QueryApi queryApi = getQueryApi();
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public List<String> getAllOccurrenceIds(List<String> objectIds, MarkLogicProjectConnector connection) throws NimtApiException {
+    String idsString = objectIds.stream()
+                                .map(objectId -> String.format("%s:%s", ICD_PREFIX, objectId))
+                                .collect(Collectors.joining()).strip();
 
     try {
-        var qb = queryApi.queryFrom(List.of(cc.getUserId()));
+        // Read the SPARQL query from the file
+        String sparqlQuery = Files.lines(Paths.get("path/to/get_tree_view_object.sparql"))
+                                  .collect(Collectors.joining("\n"));
 
-        // Fork and follow the OWNER relationship
-        qb.fork()
-          .followBack(ElementConstants.OWNER)
-          .filterOfType(ElementConstants.CUSTOMVIEW)
-          .optional()
-          .end();
+        // Replace the placeholder with the actual IDs string
+        sparqlQuery = sparqlQuery.replace("PLACEHOLDER_IDS", idsString);
 
-        // Fork and follow the MEMBER relationship, then the OWNER relationship
-        qb.fork()
-          .followBack(ElementConstants.MEMBER)
-          .followBack(ElementConstants.OWNER)
-          .filterOfType(ElementConstants.CUSTOMVIEW)
-          .optional()
-          .end();
+        // Execute the SPARQL query and get the RDF model
+        Model model = rdfUtil.getModelFromConstruct(connection, SparqlCategory.DATA, sparqlQuery, idsString);
 
-        // Fork and follow the ASSIGNEDTO relationship, then the OWNER relationship
-        qb.fork()
-          .followBack(ElementConstants.ASSIGNEDTO)
-          .followBack(ElementConstants.OWNER)
-          .filterOfType(ElementConstants.CUSTOMVIEW)
-          .optional()
-          .end();
-
-        // Execute the query and collect the results
-        var results = qb.query();
-        return new DomainObjCollector(results);
+        // Extract and return the IDs from the RDF model
+        return getIdsFromTriples(model);
+    } catch (IOException e) {
+        throw new NimtApiException("Error reading SPARQL query file", e);
     } catch (Exception e) {
-        throw new CbeException(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage(), e);
+        throw new NimtApiException("Error executing SPARQL query", e);
     }
+}
+
+// Example implementation of getIdsFromTriples
+private List<String> getIdsFromTriples(Model model) {
+    // Your implementation here
 }
