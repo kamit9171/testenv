@@ -1,35 +1,119 @@
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Collectors;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Registration Form</title>
+    <link rel="stylesheet" href="stylesheet.css">
+    <script>
+        function setError(id, error) {
+            const element = document.getElementById(id);
+            element.nextElementSibling.innerHTML = error;
+        }
 
-public List<String> getAllOccurrenceIds(List<String> objectIds, MarkLogicProjectConnector connection) throws NimtApiException {
-    String idsString = objectIds.stream()
-                                .map(objectId -> String.format("%s:%s", ICD_PREFIX, objectId))
-                                .collect(Collectors.joining()).strip();
+        function validateForm() {
+            let returnVal = true;
 
-    try {
-        // Read the SPARQL query from the file
-        String sparqlQuery = Files.lines(Paths.get("path/to/get_tree_view_object.sparql"))
-                                  .collect(Collectors.joining("\n"));
+            const ssid = document.forms['registrationForm']["SSID"].value;
+            if (ssid.length < 5) {
+                setError("SSID", "SSID must be at least 5 characters long");
+                returnVal = false;
+            }
 
-        // Replace the placeholder with the actual IDs string
-        sparqlQuery = sparqlQuery.replace("PLACEHOLDER_IDS", idsString);
+            const firstName = document.forms['registrationForm']["firstName"].value;
+            if (firstName.length < 2) {
+                setError("firstName", "First name must be at least 2 characters long");
+                returnVal = false;
+            }
 
-        // Execute the SPARQL query and get the RDF model
-        Model model = rdfUtil.getModelFromConstruct(connection, SparqlCategory.DATA, sparqlQuery, idsString);
+            const lastName = document.forms['registrationForm']["lastName"].value;
+            if (lastName.length < 2) {
+                setError("lastName", "Last name must be at least 2 characters long");
+                returnVal = false;
+            }
 
-        // Extract and return the IDs from the RDF model
-        return getIdsFromTriples(model);
-    } catch (IOException e) {
-        throw new NimtApiException("Error reading SPARQL query file", e);
-    } catch (Exception e) {
-        throw new NimtApiException("Error executing SPARQL query", e);
-    }
-}
+            const phoneNumber = document.forms['registrationForm']["phoneNumber"].value;
+            if (!phoneNumber.match(/[789][0-9]{9}/)) {
+                setError("phoneNumber", "Phone number must be 10 digits starting with 7, 8, or 9");
+                returnVal = false;
+            }
 
-// Example implementation of getIdsFromTriples
-private List<String> getIdsFromTriples(Model model) {
-    // Your implementation here
-}
+            const password = document.forms['registrationForm']["password"].value;
+            const confirmPassword = document.forms['registrationForm']["confirmPassword"].value;
+            if (password !== confirmPassword) {
+                setError("confirmPassword", "Passwords do not match");
+                returnVal = false;
+            }
+
+            return returnVal;
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="form-title">Registration</h1>
+        <form name="registrationForm" onsubmit="return validateForm()">
+            <div class="main-user-info">
+
+                <div class="user-input-box">
+                    <label for="SSID">SSID</label>
+                    <input type="text" id="SSID" name="SSID" placeholder="Enter Your SSID Name" required>
+                    <span class="formerror"></span>
+                </div>
+
+                <div class="user-input-box">
+                    <label for="firstName">First name</label>
+                    <input type="text" id="firstName" name="firstName" placeholder="Enter Your First Name" required>
+                    <span class="formerror"></span>
+                </div>
+
+                <div class="user-input-box">
+                    <label for="lastName">Last name</label>
+                    <input type="text" id="lastName" name="lastName" placeholder="Enter Your Last Name" required>
+                    <span class="formerror"></span>
+                </div>
+
+                <div class="user-input-box">
+                    <label for="city">City</label>
+                    <input type="text" id="city" name="city" placeholder="Enter Your City" required>
+                    <span class="formerror"></span>
+                </div>
+
+                <div class="user-input-box">
+                    <label for="phoneNumber">Phone number</label>
+                    <input type="text" id="phoneNumber" name="phoneNumber" pattern="[789][0-9]{9}" placeholder="Enter Your Phone Number" required>
+                    <span class="formerror"></span>
+                </div>
+
+                <div class="user-input-box">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter Password" required>
+                    <span class="formerror"></span>
+                </div>
+
+                <div class="user-input-box">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" required>
+                    <span class="formerror"></span>
+                </div>
+
+                <div class="gender-details-box">
+                    <span class="gender-title">Gender</span>
+                    <div class="gender-category">
+                        <input type="radio" name="gender" id="male" value="male">
+                        <label for="male">Male</label>
+                        <input type="radio" name="gender" id="female" value="female">
+                        <label for="female">Female</label>
+                        <input type="radio" name="gender" id="other" value="other">
+                        <label for="other">Other</label>
+                    </div>
+                </div>
+
+                <div class="form-submit-btn">
+                    <input type="submit" value="Register">
+                </div>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
